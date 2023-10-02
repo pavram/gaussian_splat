@@ -1,0 +1,27 @@
+FROM colmap/colmap:latest
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Australia/Sydney
+
+RUN apt update && apt install -y tzdata ffmpeg colmap software-properties-common
+
+# Image Magick 7+
+RUN apt update && apt install -y git build-essential make gcc libxext-dev zlib1g-dev libpng-dev libjpeg-dev libfreetype6-dev libxml2-dev
+WORKDIR /workspace
+RUN git clone https://github.com/ImageMagick/ImageMagick.git --recursive
+WORKDIR /workspace/ImageMagick
+RUN ./configure && make -j4 && make install
+
+# Conda install
+SHELL [ "/bin/bash", "--login", "-c" ]
+RUN apt update && apt install -y curl wget
+RUN curl -s https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/conda.sh
+RUN bash /tmp/conda.sh -b && rm /tmp/conda.sh
+RUN ~/miniconda3/bin/conda init bash
+RUN ln /root/miniconda3/bin/conda /usr/bin/conda
+
+WORKDIR /workspace
+RUN git clone https://github.com/graphdeco-inria/gaussian-splatting --recursive
+WORKDIR /workspace/gaussian-splatting
+
+COPY ./scripts/run-colmap.sh /workspace/run-colmap.sh

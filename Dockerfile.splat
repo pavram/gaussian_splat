@@ -1,0 +1,30 @@
+FROM nvcr.io/nvidia/mxnet:22.04-py3
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Australia/Sydney
+
+RUN apt update && apt install -y tzdata software-properties-common
+
+# Conda install
+SHELL [ "/bin/bash", "-c" ]
+RUN apt update && apt install -y curl wget 
+RUN curl -s https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/conda.sh
+RUN bash /tmp/conda.sh -b && rm /tmp/conda.sh
+RUN ~/miniconda3/bin/conda init bash 
+RUN ln /root/miniconda3/bin/conda /usr/bin/conda
+
+# We can't build the environment in this container because Docker-build does not pass through GPU
+# So instead we will give ourselves the tools to save our environment out the first time we run.
+RUN conda install -c conda-forge conda-pack
+
+# Gaussian Splatting install
+WORKDIR /workspace
+RUN git clone https://github.com/graphdeco-inria/gaussian-splatting --recursive
+
+# Fix for the lack of CUDA detection during environment creation
+ARG TORCH_CUDA_ARCH_LIST="3.5;5.0;6.0;6.1;7.0;7.5;8.0;8.6+PTX"
+
+WORKDIR /workspace/gaussian-splatting
+RUN conda env create --file environment.yml
+
+COPY ./scripts/run-splat.sh /workspace/run-splat.sh

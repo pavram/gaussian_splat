@@ -1,0 +1,33 @@
+version: "3.0"
+
+services:
+  colmap:
+    build:
+      dockerfile: Dockerfile.colmap
+    volumes:
+      - ./video_input:/workspace/input
+      - ./splat_input:/workspace/output
+    shm_size: '2gb'
+    command: [ "/bin/bash", "--login", "-c", "/workspace/run-colmap.sh 0.5" ]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+  splat:
+    build:
+      dockerfile: Dockerfile.splat
+    volumes:
+      - ./splat_input:/workspace/input
+      - ./model_output:/workspace/output
+    shm_size: '2gb'
+    command: [ "/bin/bash", "--login", "-c", "/workspace/run-splat.sh 7000" ]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+
+
